@@ -1094,17 +1094,14 @@ function renderServers(servers = [], contentUrl = null) {
   });
 }
 
-// Play embed video in the integrated player (sin anuncios)
+// Play embed video in the integrated player
 function playEmbedVideo(embedUrl, serverName, language) {
   const title = state.selectedMedia.title;
   const episodeLabel = state.selectedMedia.type === "series" || state.selectedMedia.type === "anime"
     ? ` — Temp ${state.activeSeason} Cap ${state.activeEpisode}`
     : "";
   playerTitle.textContent = `Reproduciendo: ${title}${episodeLabel} — ${serverName.toUpperCase()} (${language})`;
-  
-  // Usamos el player limpio en lugar del iframe original (sin anuncios)
-  playerIframe.src = `/api/v1/content/play?url=${encodeURIComponent(embedUrl)}`;
-  
+  playerIframe.src = embedUrl;
   videoPlayerContainer.classList.remove("hidden");
   
   // Smooth scroll video player container into view inside modal
