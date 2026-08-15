@@ -383,7 +383,7 @@ router.get(
 
 
 /**
- * Player limpio sin anuncios
+ * Player limpio sin anuncios (versión mejorada)
  * GET /play?url=https://streamwish.to/e/xxx
  */
 router.get(
@@ -400,73 +400,87 @@ router.get(
       throw new ApiError(404, "No se pudo resolver el video");
     }
 
-    const isHls = directUrl.includes(".m3u8");
+    const isHls = /\.m3u8|\.txt/i.test(directUrl);
 
-    const html = `
-<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reproductor limpio</title>
+  <title>Reproductor</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
       background: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      overflow: hidden;
+    }
+    #player {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      object-fit: contain;
+    }
+    .msg {
+      color: #fff;
+      text-align: center;
+      margin-top: 40vh;
       font-family: system-ui, sans-serif;
     }
-    video {
-      width: 100%;
-      max-width: 1280px;
-      max-height: 100vh;
-      background: #000;
-    }
-    .error {
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
   </style>
-  ${isHls ? '<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>' : ''}
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15"></script>
 </head>
 <body>
   <video id="player" controls autoplay playsinline></video>
-
   <script>
     const video = document.getElementById('player');
     const src = ${JSON.stringify(directUrl)};
+    const isHls = ${isHls};
 
-    ${isHls ? `
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false
-      });
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src;
-      video.addEventListener('loadedmetadata', () => video.play().catch(() => {}));
-    } else {
-      document.body.innerHTML = '<div class="error">Tu navegador no soporta HLS</div>';
+    function showError(msg) {
+      document.body.innerHTML = '<div class="msg">' + msg + '</div>';
     }
-    ` : `
-    video.src = src;
-    video.play().catch(() => {});
-    `}
+
+    if (isHls) {
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          xhrSetup: function(xhr) {
+            // Algunos servidores requieren este header
+            xhr.withCredentials = false;
+          }
+        });
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+          video.play().catch(function(){});
+        });
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          if (data.fatal) {
+            showError('Error al cargar el video. Prueba otro servidor.');
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari
+        video.src = src;
+        video.addEventListener('loadedmetadata', function() {
+          video.play().catch(function(){});
+        });
+      } else {
+        showError('Tu navegador no soporta este formato de video');
+      }
+    } else {
+      // MP4 directo
+      video.src = src;
+      video.play().catch(function(){});
+    }
   </script>
 </body>
-</html>
-    `;
+</html>`;
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
     res.send(html);
   })
 );
