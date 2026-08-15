@@ -1094,54 +1094,21 @@ function renderServers(servers = [], contentUrl = null) {
   });
 }
 
-// Play embed video
+
+
 function playEmbedVideo(embedUrl, serverName, language) {
   const title = state.selectedMedia.title;
   const episodeLabel = state.selectedMedia.type === "series" || state.selectedMedia.type === "anime"
     ? ` — Temp ${state.activeSeason} Cap ${state.activeEpisode}`
     : "";
   playerTitle.textContent = `Reproduciendo: ${title}${episodeLabel} — ${serverName.toUpperCase()} (${language})`;
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-  if (isIOS) {
-    // En iPhone: intentar resolver y abrir enlace directo (mejor en VLC)
-    playerIframe.src = "";
-    videoPlayerContainer.classList.remove("hidden");
-
-    // Mostrar mensaje mientras resuelve
-    playerTitle.textContent = `Resolviendo enlace limpio...`;
-
-    fetch(`/api/v1/content/resolve?url=${encodeURIComponent(embedUrl)}`)
-      .then(r => r.json())
-      .then(json => {
-        const direct = json?.data?.directUrl;
-        if (direct && direct !== embedUrl) {
-          // Abrir el stream directo (en iOS a veces reproduce, o se puede copiar a VLC)
-          playerIframe.src = direct;
-          playerTitle.textContent = `Reproduciendo: ${title}${episodeLabel} — ${serverName.toUpperCase()} (${language})`;
-
-          // Aviso para abrir en VLC si hay redirecciones
-          showToast("Si salen anuncios, abre el enlace en VLC", "info", 5000);
-        } else {
-          // Fallback al embed original
-          playerIframe.src = embedUrl;
-          playerTitle.textContent = `Reproduciendo: ${title}${episodeLabel} — ${serverName.toUpperCase()} (${language})`;
-        }
-      })
-      .catch(() => {
-        playerIframe.src = embedUrl;
-        playerTitle.textContent = `Reproduciendo: ${title}${episodeLabel} — ${serverName.toUpperCase()} (${language})`;
-      });
-  } else {
-    // PC: iframe original (con Brave casi no hay anuncios)
-    playerIframe.src = embedUrl;
-  }
-
+  playerIframe.src = embedUrl;
   videoPlayerContainer.classList.remove("hidden");
   videoPlayerContainer.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+
+
 
 // Start Download Job via API POST
 async function startDownloadJob(mediaUrl, language, serverToken) {
