@@ -1094,8 +1094,7 @@ function renderServers(servers = [], contentUrl = null) {
   });
 }
 
-
-
+// Play embed video in the integrated player
 function playEmbedVideo(embedUrl, serverName, language) {
   const title = state.selectedMedia.title;
   const episodeLabel = state.selectedMedia.type === "series" || state.selectedMedia.type === "anime"
@@ -1104,11 +1103,10 @@ function playEmbedVideo(embedUrl, serverName, language) {
   playerTitle.textContent = `Reproduciendo: ${title}${episodeLabel} — ${serverName.toUpperCase()} (${language})`;
   playerIframe.src = embedUrl;
   videoPlayerContainer.classList.remove("hidden");
+  
+  // Smooth scroll video player container into view inside modal
   videoPlayerContainer.scrollIntoView({ behavior: "smooth", block: "start" });
 }
-
-
-
 
 // Start Download Job via API POST
 async function startDownloadJob(mediaUrl, language, serverToken) {
